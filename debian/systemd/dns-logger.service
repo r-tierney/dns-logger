@@ -1,0 +1,13 @@
+[Unit]
+Description=dns-logger, Records dns queries on eth1 and eth2 then sends them to clickhouse
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/default/dns-logger
+ExecStart=/usr/local/bin/dns-logger
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+

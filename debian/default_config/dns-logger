@@ -1,0 +1,2 @@
+# Environment file for systemd service
+# DNS_TRAFFIC_DB_PASS='clickhouse_db_pass_here'

@@ -1,0 +1,56 @@
+stages:
+  - test
+  - compile_go
+  - build_deb
+  - deploy
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - when: always
+
+include:
+  - project: 'ops/gitlab-ci-templates'
+    file:
+      - 'build_jobs/build_fpm.yml'
+      - 'deploy_jobs/deploy_deb.yml'
+
+test:
+  stage: test
+  tags:
+    - docker
+  image: golang:1.20
+  script:
+    - apt-get update && apt-get install -y gcc libpcap-dev
+    - go test ./... 
+
+compile_go:
+  stage: compile_go
+  tags:
+    - docker
+  image: golang:1.20
+  script:
+    - apt-get update && apt-get install -y gcc libpcap-dev
+    - go build dns-logger.go
+  artifacts:
+    paths:
+      - dns-logger
+    expire_in: 1 day
+
+build_deb:
+  extends: .build_fpm
+  stage: build_deb
+  dependencies:
+    - compile_go
+  variables:
+    ARCH: x86_64
+    BINARY_FILE: dns-logger
+    PACKAGE_NAME: dns-logger
+    INSTALL_PATH: /usr/local/bin
+    EXTRA_ARGS: "--maintainer='Ryan Tierney' --description='Prometheus network flow monitoring tool' --license=GPL3 --url=https://git.trellian.com/ops/dns-logger --deb-systemd=debian/systemd/dns-logger.service --deb-default=debian/default_config/dns-logger"
+
+deploy_deb:
+  extends: .deploy_deb
+  variables:
+    OS: "bullseye"
